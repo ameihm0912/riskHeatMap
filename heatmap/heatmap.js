@@ -485,113 +485,66 @@ d3.json("risks.json", function(error, jsondata) {
 					}
 				});
 
-				//vulnerability/compliance data?
-				if ( target.record.rra.supporting_system_groups !== undefined ) {
-					d3.select("#osVulnerabilities")
+				//indicators?
+				if ( target.record.rra.asset_groups !== undefined ) {
+					d3.select("#rraIndicators")
 					.append("ul")
-					.classed('osVulnerabilitiesList',true);
+					.classed('rraIndicators',true);
 
-					d3.select("#osLayer")
-					.append("ul")
-					.classed('osComplianceList',true);
-					
-					d3.select("#webLayer")
-					.append("ul")
-					.classed('webLayerRatings',true);
-
-					target.record.rra.supporting_system_groups.forEach(function(d,i){
+					target.record.rra.asset_groups.forEach(function(d,i){
+						//within each asset group, an assets element should be present which
+						//will be a list of assets that make up the group. for each asset, we
+						//can have a list of indicators.
+						//
+						//indicators are a normalized method of describing a probability value.
+						//each indicator has a standard format, with a details section which may
+						//include details and is customizable by whatever control is providing the
+						//indicator.
+						//
+						//within each indicator, the event_source and likelihood_indicator values
+						//are the most interesting which describe what created the indicator for
+						//the asset, and what the assessed probability/likelihood was.
+						//
 						//add the system group name to the vulns and compliance sections
 						if (_.has(d,"name")) {
-							d3.select(".osVulnerabilitiesList")
-							.append("li")
-							.classed('systemGroup',true)
-							.text(d.name + ':');
-
-							d3.select(".osComplianceList")
+							d3.select(".rraIndicators")
 							.append("li")
 							.classed('systemGroup',true)
 							.text(d.name + ':');
 						}
 
-						if ( d.hosts !== undefined ) {
-							//for each host, summarize the vulns and compliance
-							d.hosts.forEach(function(host,i){
-								hostname='unknown'
-								if (_.has(host,"hostname") && _.has(host,"vulnerabilities")) {
-									vulnTable = d3.select(".osVulnerabilitiesList")
+						if ( d.assets !== undefined ) {
+							//for each asset, summarize indicators; and asset can be anything
+							//including a host, or a website, etc
+							d.assets.forEach(function(asset,i){
+								assetid='unknown'
+								if (_.has(asset,"asset_identifier") && _.has(host,"indicators")) {
+									indTable = d3.select(".rraIndicators")
 									.append("li")
 									.append("table")
 
-									vulnTable.append("thead")
+									indTable.append("thead")
 										.append("th")
 										.attr("colspan","5")
-										.html(host.hostname);
+										.html(asset.asset_identifier);
 
-									tbody=vulnTable.append("tbody");
+									tbody=indTable.append("tbody");
 									var rows = tbody.selectAll("tr")
-										.data([host])
+										.data([asset.indicators])
 										.enter()
 										.append("tr");
 
 									var columns = rows.selectAll("td")
-										.data(_.pairs(_.omit(host.vulnerabilities,'last90days')))  //remove the sub object
+										.data(_.pairs(_.omit([asset.indicators],'details'))) //remove details sub object.
 										.enter().append("td")
 										.html(function(d){return d[0] + ': ' + d[1];});
 								}
-
-								if (_.has(host,"hostname") && _.has(host,"compliance")) {
-									complianceTable = d3.select(".osComplianceList")
-									.append("li")
-									.append("table")
-
-									complianceTable.append("thead")
-										.append("th")
-										.attr("colspan","5")
-										.html(host.hostname);
-
-									tbody=complianceTable.append("tbody");
-									var rows = tbody.selectAll("tr")
-										.data([host])
-										.enter()
-										.append("tr");
-
-									var columns = rows.selectAll("td")
-										.data(_.pairs(_.omit(host.compliance,'details'))) //remove details sub object.
-										.enter().append("td")
-										.html(function(d){return d[0] + ': ' + d[1];});
 								}
-							});//end hosts
-						}//end hosts exists
-						
-						if ( d.websites !== undefined ) {
-							//for each website show the rankings
-							d.websites.forEach(function(site,i){
-								if (_.has(site,"hostname") && _.has(site,"http_observatory")) {
-									complianceTable = d3.select(".webLayerRatings")
-									.append("li")
-									.append("table")
 
-									complianceTable.append("thead")
-										.append("th")
-										.attr("colspan","5")
-										.html(site.hostname);
-
-									tbody=complianceTable.append("tbody");
-									var rows = tbody.selectAll("tr")
-										.data([site])
-										.enter()
-										.append("tr");
-
-									var columns = rows.selectAll("td")
-										.data(_.pairs(_.omit(site.http_observatory,'coverage'))) //remove details sub object.
-										.enter().append("td")
-										.html(function(d){return d[0] + ': ' + d[1];});
-								}
-							});//end website details
-						} //end  websites
-
+							});//end assets
+						}//end asset exists
 					});
-				} //end we have vuln/compliance data
+				} //end we have indicators
 			} //end mouse intersected a box
 		} //end onMouseDblClick
 
